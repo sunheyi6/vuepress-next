@@ -30,13 +30,14 @@ import {
   pageHeadTitleSymbol,
   pageLangSymbol,
   pageLayoutSymbol,
-  pagesData,
+  pagesMap,
   routeLocaleSymbol,
   siteData,
   siteLocaleDataSymbol,
 } from './composables/index.js'
 import { withBase } from './helpers/index.js'
 import { resolvers } from './resolvers.js'
+import { PageInfoKey } from './types/index.js'
 import type { ClientConfig } from './types/index.js'
 
 /**
@@ -78,7 +79,8 @@ export const setupGlobalComputed = (
   // handle page data HMR
   if (__VUEPRESS_DEV__ && (import.meta.webpackHot || import.meta.hot)) {
     __VUE_HMR_RUNTIME__.updatePageData = (data: PageData) => {
-      pagesData.value[data.key] = () => Promise.resolve(data)
+      pagesMap.value.get(data.path)![PageInfoKey.data] = () =>
+        Promise.resolve(data)
       if (data.key === router.currentRoute.value.meta._data?.key) {
         router.currentRoute.value.meta._data = data
         pageData.trigger()

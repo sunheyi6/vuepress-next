@@ -1,3 +1,4 @@
+import type { PageInfo, PagesMap } from '@internal/pagesMap'
 import {
   dedupeHead,
   isArray,
@@ -16,9 +17,11 @@ import type {
   SiteData,
   SiteLocaleData,
 } from './composables/index.js'
-import { pageDataEmpty, pagesData } from './composables/index.js'
+import { pageDataEmpty } from './composables/index.js'
 import { LAYOUT_NAME_DEFAULT, LAYOUT_NAME_NOT_FOUND } from './constants.js'
+import { covertMdPathToHtml, getPageInfo } from './helpers/router.js'
 import type { ClientConfig, Layouts } from './types/index.js'
+import { PageInfoKey } from './types/index.js'
 
 /**
  * Resolver methods to get global computed
@@ -39,10 +42,42 @@ export const resolvers = reactive({
     ),
 
   /**
-   * Resolve page data according to page key
+   * Resolve page info according to page path
    */
-  resolvePageData: async (pageKey: string): Promise<PageData> => {
-    const pageDataResolver = pagesData.value[pageKey]
+  resolvePageInfo: (pagesMap: PagesMap, path: string): PageInfo => {
+    path = covertMdPathToHtml(path)
+
+    let pageInfo = getPageInfo(path)
+    if (pageInfo) {
+      return pageInfo
+    }
+
+    // try path with suffix
+    pageInfo = getPageInfo(path + '.html')
+    if (pageInfo) {
+      return pageInfo
+    }
+
+    // try to remove existing /index.html
+    if (path.endsWith('/index.html')) {
+      pageInfo = getPageInfo(path.substring(0, path.length - 10))
+      if (pageInfo) {
+        return pageInfo
+      }
+    }
+
+    // if no match at this point, then we should provide 404 page
+    return pagesMap['/404.html']
+  },
+
+  /**
+   * Resolve page data according to page path and page info
+   */
+  resolvePageData: async (
+    pageInfo: PageInfo,
+    _path: string,
+  ): Promise<PageData> => {
+    const pageDataResolver = pageInfo?.[PageInfoKey.data]
     const pageData = await pageDataResolver?.()
     return pageData ?? pageDataEmpty
   },

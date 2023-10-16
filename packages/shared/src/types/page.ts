@@ -73,6 +73,12 @@ export type PageFrontmatter<
   layout?: string
   permalink?: string
   permalinkPattern?: string | null
+  meta?: Record<string, unknown>
+  /**
+   * @deprecated use `meta` instead
+   */
+
+  // TODO: remove in stable version
   routeMeta?: Record<string, unknown>
   title?: string
 }

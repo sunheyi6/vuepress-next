@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { resolvePageRouteMeta } from '../../src/index.js'
+import { resolvePageMeta } from '../../src/index.js'
 
-describe('core > page > resolvePageRouteMeta', () => {
-  it('should use frontmatter routeMeta', () => {
-    const routeMeta = resolvePageRouteMeta({
+describe('core > page > resolvePageMeta', () => {
+  it('should use frontmatter meta', () => {
+    const meta = resolvePageMeta({
       frontmatter: {
-        routeMeta: {
+        meta: {
           foo: 'foo',
         },
       },
     })
 
-    expect(routeMeta).toEqual({
+    expect(meta).toEqual({
       foo: 'foo',
     })
   })
 
   it('should return default value', () => {
-    const routeMeta = resolvePageRouteMeta({
+    const meta = resolvePageMeta({
       frontmatter: {},
     })
 
-    expect(routeMeta).toEqual({})
+    expect(meta).toEqual({})
   })
 })

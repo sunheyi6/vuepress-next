@@ -1,6 +1,7 @@
-import { pagesComponents } from '@internal/pagesComponents'
+import { pagesMap } from '@internal/pagesMap'
 import { computed, defineComponent, h } from 'vue'
 import { usePageData } from '../composables/index.js'
+import { PageInfoKey } from '../types/index.js'
 
 /**
  * Markdown rendered content
@@ -10,7 +11,7 @@ export const Content = defineComponent({
   name: 'Content',
 
   props: {
-    pageKey: {
+    url: {
       type: String,
       required: false,
       default: '',
@@ -20,7 +21,7 @@ export const Content = defineComponent({
   setup(props) {
     const page = usePageData()
     const pageComponent = computed(
-      () => pagesComponents[props.pageKey || page.value.key],
+      () => pagesMap.get(props.url || page.value.path)?.[PageInfoKey.component],
     )
     return () =>
       pageComponent.value

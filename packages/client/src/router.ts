@@ -1,4 +1,4 @@
-import { pagesComponents } from '@internal/pagesComponents'
+import { pagesMap } from '@internal/pagesMap'
 import { removeEndingSlash } from '@vuepress/shared'
 import type { Router } from 'vue-router'
 import {
@@ -7,9 +7,10 @@ import {
   createWebHistory,
   START_LOCATION,
 } from 'vue-router'
+import { Vuepress } from './components/Vuepress.js'
 import type { PageData } from './composables/index.js'
 import { resolvers } from './resolvers.js'
-import { createRoutes } from './routes.js'
+import { PageInfoKey } from './types/index.js'
 
 /**
  * - use `createWebHistory` in dev mode and build mode client bundle
@@ -24,8 +25,14 @@ export const createVueRouter = (): Router => {
   const router = createRouter({
     // it might be an issue of vue-router that have to remove the ending slash
     history: historyCreator(removeEndingSlash(__VUEPRESS_BASE__)),
-    routes: createRoutes(),
-    scrollBehavior: (to, from, savedPosition) => {
+    routes: [
+      {
+        name: 'vuepress-route',
+        path: '/:catchAll(.*)',
+        component: Vuepress,
+      },
+    ],
+    scrollBehavior: (to, _from, savedPosition) => {
       if (savedPosition) return savedPosition
       if (to.hash) return { el: to.hash }
       return { top: 0 }
@@ -36,9 +43,14 @@ export const createVueRouter = (): Router => {
   // and save page data to route meta
   router.beforeResolve(async (to, from) => {
     if (to.path !== from.path || from === START_LOCATION) {
+      const pageInfo = resolvers.resolvePageInfo(pagesMap, to.path)
+
+      // TODO: Remove in stable version
+      // write to meta into the record
+      to.meta = pageInfo[PageInfoKey.meta]
       ;[to.meta._data] = await Promise.all([
-        resolvers.resolvePageData(to.name as string),
-        pagesComponents[to.name as string]?.__asyncLoader(),
+        resolvers.resolvePageData(pageInfo, to.path),
+        pageInfo[PageInfoKey.component]?.__asyncLoader(),
       ])
     }
   })
