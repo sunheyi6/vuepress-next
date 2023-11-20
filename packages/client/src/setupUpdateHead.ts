@@ -1,6 +1,6 @@
 import { isPlainObject, isString } from '@vuepress/shared'
 import type { HeadConfig, VuepressSSRContext } from '@vuepress/shared'
-import { onMounted, provide, ref, useSSRContext, watch } from 'vue'
+import { onMounted, provide, useSSRContext, watch } from 'vue'
 import {
   updateHeadSymbol,
   usePageHead,
@@ -25,42 +25,51 @@ export const setupUpdateHead = (): void => {
     return
   }
 
-  const headTags = ref<HTMLElement[]>([])
+  const managedHeadElements: HTMLElement[] = []
 
   // load current head tags from DOM
   const loadHead = (): void => {
-    head.value.forEach((item) => {
-      const tag = queryHeadTag(item)
-      if (tag) {
-        headTags.value.push(tag)
-      }
-    })
+    managedHeadElements.push(
+      ...(head.value.map(queryHeadElement).filter(Boolean) as HTMLElement[]),
+    )
   }
 
   // update html lang attribute and head tags to DOM
   const updateHead: UpdateHead = () => {
     document.documentElement.lang = lang.value
 
-    headTags.value.forEach((item) => {
+    managedHeadElements.forEach((item) => {
       if (item.parentNode === document.head) {
         document.head.removeChild(item)
       }
     })
-    headTags.value.splice(0, headTags.value.length)
 
-    head.value.forEach((item) => {
-      const tag = createHeadTag(item)
-      if (tag !== null) {
-        document.head.appendChild(tag)
-        headTags.value.push(tag)
+    const newHeadElements = head.value
+      .map(createHeadElement)
+      .filter(Boolean) as HTMLElement[]
+
+    managedHeadElements.forEach((el, index) => {
+      const matchedIndex = newHeadElements.findIndex(
+        (newEl) => newEl?.isEqualNode(el ?? null),
+      )
+
+      if (matchedIndex !== -1) {
+        delete newHeadElements[matchedIndex]
+      } else {
+        el?.remove()
+        delete managedHeadElements[index]
       }
     })
+
+    newHeadElements.forEach((el) => {
+      document.head.appendChild(el)
+    })
+    managedHeadElements.push(...newHeadElements)
   }
   provide(updateHeadSymbol, updateHead)
 
   onMounted(() => {
     loadHead()
-    updateHead()
     watch(() => head.value, updateHead)
   })
 }
@@ -68,7 +77,7 @@ export const setupUpdateHead = (): void => {
 /**
  * Query the matched head tag of head config
  */
-export const queryHeadTag = ([
+export const queryHeadElement = ([
   tagName,
   attrs,
   content = '',
@@ -94,7 +103,7 @@ export const queryHeadTag = ([
 /**
  * Create head tag from head config
  */
-export const createHeadTag = ([
+export const createHeadElement = ([
   tagName,
   attrs,
   content,
